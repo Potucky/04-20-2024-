@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SQL data-quality checks — test report</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --ink: #1c2430;
+      --muted: #5c6b7a;
+      --line: #e2e8ee;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    main { max-width: 40rem; margin: 0 auto; padding: 48px 20px 64px; }
+    h1 { font-size: 1.6rem; margin: 0 0 8px; }
+    p { margin: 8px 0; }
+    .meta { color: var(--muted); }
+    ul { padding-left: 1.2rem; }
+    li { margin: 6px 0; }
+    a { color: #0b57d0; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>SQL data-quality checks</h1>
+    <p class="meta">Portfolio demo for a fictional veterinary clinic. Not employer code.</p>
+    <div class="card">
+      <p>Reports from the latest push to <code>main</code>:</p>
+      <ul>
+        <li><a href="pytest-report.html">pytest HTML report</a></li>
+        <li><a href="clean/dq-summary.html">Clean extract — data-quality summary</a></li>
+        <li><a href="defects/dq-summary.html">Seeded defects — data-quality summary</a></li>
+      </ul>
+    </div>
+    <p><a href="https://github.com/Potucky/sql-data-quality-checks">Source on GitHub</a></p>
+  </main>
+</body>
+</html>
