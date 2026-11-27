@@ -1,20 +1,22 @@
 # SQL Data Quality Checks
 
-[![Data quality checks](https://github.com/Potucky/04-20-2024-/actions/workflows/data-quality.yml/badge.svg)](https://github.com/Potucky/04-20-2024-/actions/workflows/data-quality.yml)
+[![Data quality checks](https://github.com/Potucky/sql-data-quality-checks/actions/workflows/data-quality.yml/badge.svg)](https://github.com/Potucky/sql-data-quality-checks/actions/workflows/data-quality.yml)
+
+[Live test report](https://potucky.github.io/sql-data-quality-checks/)
 
 SQL data-quality suite for a fictional veterinary clinic. It loads patients, visits, lab results, and invoices into DuckDB and runs the same kind of warehouse checks you would point at Snowflake or PostgreSQL: volume, required fields, uniqueness, foreign keys, accepted values, ranges, date logic, and cross-table consistency.
 
-This repository is a portfolio demo, not code from an employer. Harbor Veterinary Clinic, the rows, and the seeded defects are fictional. Suggested repository name: `sql-data-quality-checks`.
+This repository is a portfolio demo, not code from an employer. Harbor Veterinary Clinic, the rows, and the seeded defects are fictional.
 
 DuckDB is the local stand-in for a warehouse. The staging tables are typed and permissive: primary keys and foreign keys are not enforced on load. The check suite is the gate, which is the usual split for a raw or staging layer before a stricter model.
 
-## What this demonstrates
+## What this project demonstrates
 
-- A check catalog in YAML, with join-heavy rules kept as readable SQL
-- A clean extract that passes every check, and a defect seed that fails a known set
-- Deterministic dates: business dates are compared with `as_of_date` from config, so a run does not depend on the wall clock
-- Error checks that fail the process, and a warning that is reported and still exits 0
-- HTML, JSON, and JUnit reports, published from GitHub Actions
+- **SQL data validation.** A YAML catalog runs warehouse-style checks in DuckDB: volume, required fields, uniqueness, foreign keys, accepted values, ranges, and date logic. Dates are compared with `as_of_date` from config, so a run does not depend on the wall clock.
+- **Cross-table consistency.** Domain SQL joins patients, visits, lab results, and invoices and returns rows whose patient keys, completed-visit billing, or payment status disagree.
+- **Seeded negative tests.** The clean extract passes every check. Each mutation in `data/defects/seed.yaml`, applied on its own, fails exactly the checks named for that mutation, and the failing sample contains the seeded key.
+- **Blocking errors and reported warnings.** An error-level failure exits 1. A warning is written into the report and still exits 0. `--expect-failures` exits 0 only when the failing set matches the seed.
+- **CI test reports.** GitHub Actions lints with ruff, runs pytest, and writes a self-contained pytest-html report, JUnit XML, and HTML/JSON summaries. A push to `main` deploys the pytest HTML report and the HTML data-quality summaries to GitHub Pages.
 
 ## Stack
 
@@ -31,6 +33,7 @@ sql/domain/                 One failing-row query per business rule
 src/clinic_dq/              Load, execute, report, CLI
 tests/                      Clean pass, one test per defect, reports, CLI
 scripts/build_sample_data.py
+docs/pages-index.html       Landing page for the published HTML reports
 .github/workflows/data-quality.yml
 ```
 
@@ -152,7 +155,13 @@ That run fails the date gates and leaves the volume gates passing. The suite cov
 
 `.github/workflows/data-quality.yml` runs on push and pull request. It lints with ruff, runs pytest with JUnit XML and a self-contained pytest-html report, writes the clean summary, writes the defect summary with `--expect-failures`, and uploads `reports/` as the `data-quality-reports` artifact.
 
+On a push to `main`, the `pages` job runs pytest again, writes the clean and defect summaries, and deploys the HTML report. It writes `index.html` from `docs/pages-index.html`, then publishes that page plus the pytest report and both data-quality summaries with `actions/upload-pages-artifact` and `actions/deploy-pages`. The job's token has `contents: read`, `pages: write`, `id-token: write`, and `actions: read` (so the deploy step can download the uploaded artifact). The [live test report](https://potucky.github.io/sql-data-quality-checks/) updates after that job runs on `main`. GitHub serves the site only when the repository Pages source is GitHub Actions.
+
 The badge tracks the default branch and updates after this workflow is on that branch.
+
+pytest HTML report from a local run:
+
+![pytest HTML report: 38 passed](docs/pytest-report.png)
 
 ## Sample output
 
@@ -210,3 +219,7 @@ The suite is a local, deterministic demo of warehouse-style data QA:
 - One as-of date and one curated extract, with volume gates equal to that extract
 - Lab values are checked as non-negative numbers plus an allow-list on the abnormal flag. Clinical reference ranges per test are left out
 - Domain SQL returns columns `entity_key` and `detail`. Adding a rule is a YAML entry, or a SQL file plus a YAML entry when the rule needs a join
+
+## Author
+
+Vasyl Popovich, QA Automation Engineer, Miami, FL. GitHub: https://github.com/Potucky

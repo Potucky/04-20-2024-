@@ -6,6 +6,9 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+  actions: read
 
 concurrency:
   group: data-quality-${{ github.ref }}
@@ -15,6 +18,8 @@ jobs:
   test:
     name: pytest
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 10
     env:
       PYTHONPATH: src
@@ -62,3 +67,73 @@ jobs:
           name: data-quality-reports
           path: reports/
           if-no-files-found: error
+
+  pages:
+    name: Publish test report
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    env:
+      PYTHONPATH: src
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: >
+          python -m pytest
+          --junitxml=reports/junit.xml
+          --html=reports/pytest-report.html
+          --self-contained-html
+
+      - name: Summarize the clean extract
+        run: python -m clinic_dq run --dataset clean --report-dir reports/clean
+
+      - name: Summarize seeded defects
+        run: >
+          python -m clinic_dq run
+          --dataset defects
+          --expect-failures
+          --report-dir reports/defects
+
+      - name: Assemble the Pages site
+        run: |
+          mkdir -p site/clean site/defects
+          cp docs/pages-index.html site/index.html
+          cp reports/pytest-report.html site/pytest-report.html
+          cp reports/clean/dq-summary.html site/clean/dq-summary.html
+          cp reports/defects/dq-summary.html site/defects/dq-summary.html
+          test -s site/index.html
+          test -s site/pytest-report.html
+          test -s site/clean/dq-summary.html
+          test -s site/defects/dq-summary.html
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
