@@ -1,0 +1,279 @@
+# Harbor Veterinary Clinic data-quality catalog.
+# Thresholds live here. Queries that need joins live in sql/domain.
+# as_of_date is the extract date. Checks compare business dates to it
+# instead of the wall clock, so a run does not depend on the day it executes.
+
+as_of_date: "2024-06-15"
+min_birth_date: "1990-01-01"
+sample_limit: 20
+
+temperature_c:
+  min: 35.0
+  max: 43.0
+  required_for_species: [dog, cat, rabbit]
+
+weight_kg_by_species:
+  dog: {min: 1.0, max: 90.0}
+  cat: {min: 1.5, max: 12.0}
+  bird: {min: 0.02, max: 2.0}
+  rabbit: {min: 0.4, max: 8.0}
+  reptile: {min: 0.02, max: 5.0}
+
+datasets:
+  clean:
+    patients: data/clean/patients.csv
+    visits: data/clean/visits.csv
+    lab_results: data/clean/lab_results.csv
+    invoices: data/clean/invoices.csv
+  defects:
+    base: clean
+    seed: data/defects/seed.yaml
+
+checks:
+  row_counts:
+    - id: row_count.patients.min
+      table: patients
+      min_rows: 24
+      description: Patient extract meets the volume gate
+    - id: row_count.visits.min
+      table: visits
+      min_rows: 40
+      description: Visit extract meets the volume gate
+    - id: row_count.lab_results.min
+      table: lab_results
+      min_rows: 28
+      description: Lab extract meets the volume gate
+    - id: row_count.invoices.min
+      table: invoices
+      min_rows: 34
+      description: Invoice extract meets the volume gate
+
+  required_columns:
+    - id: not_null.patients.required_columns
+      table: patients
+      key: patient_id
+      columns: [patient_id, name, species, date_of_birth, sex, status]
+      description: Patients have id, name, species, date of birth, sex, and status
+    - id: not_null.visits.required_columns
+      table: visits
+      key: visit_id
+      columns: [visit_id, patient_id, visit_date, reason, veterinarian, status]
+      description: Visits have id, patient, date, reason, veterinarian, and status
+    - id: not_null.lab_results.required_columns
+      table: lab_results
+      key: result_id
+      columns: [result_id, visit_id, patient_id, test_code, result_value, unit, collected_at]
+      description: Lab results have id, visit, patient, test, value, unit, and collection date
+    - id: not_null.invoices.required_columns
+      table: invoices
+      key: invoice_id
+      columns: [invoice_id, visit_id, patient_id, amount, tax_amount, currency, status, issued_at]
+      description: Invoices have id, visit, patient, amounts, currency, status, and issue date
+
+  uniqueness:
+    - id: uniqueness.patients.patient_id
+      table: patients
+      columns: [patient_id]
+      description: patient_id is unique
+    - id: uniqueness.visits.visit_id
+      table: visits
+      columns: [visit_id]
+      description: visit_id is unique
+    - id: uniqueness.lab_results.result_id
+      table: lab_results
+      columns: [result_id]
+      description: result_id is unique
+    - id: uniqueness.invoices.invoice_id
+      table: invoices
+      columns: [invoice_id]
+      description: invoice_id is unique
+    - id: uniqueness.invoices.visit_id
+      table: invoices
+      columns: [visit_id]
+      description: A visit has at most one invoice
+
+  foreign_keys:
+    - id: fk.visits.patient_id
+      child_table: visits
+      child_key: visit_id
+      child_column: patient_id
+      parent_table: patients
+      parent_column: patient_id
+      description: Every visit points at a patient
+    - id: fk.lab_results.visit_id
+      child_table: lab_results
+      child_key: result_id
+      child_column: visit_id
+      parent_table: visits
+      parent_column: visit_id
+      description: Every lab result points at a visit
+    - id: fk.lab_results.patient_id
+      child_table: lab_results
+      child_key: result_id
+      child_column: patient_id
+      parent_table: patients
+      parent_column: patient_id
+      description: Every lab result points at a patient
+    - id: fk.invoices.visit_id
+      child_table: invoices
+      child_key: invoice_id
+      child_column: visit_id
+      parent_table: visits
+      parent_column: visit_id
+      description: Every invoice points at a visit
+    - id: fk.invoices.patient_id
+      child_table: invoices
+      child_key: invoice_id
+      child_column: patient_id
+      parent_table: patients
+      parent_column: patient_id
+      description: Every invoice points at a patient
+
+  accepted_values:
+    - id: accepted.patients.species
+      table: patients
+      key: patient_id
+      column: species
+      values: [dog, cat, bird, rabbit, reptile]
+      description: Species is dog, cat, bird, rabbit, or reptile
+    - id: accepted.patients.sex
+      table: patients
+      key: patient_id
+      column: sex
+      values: [M, F, U]
+      description: Sex is M, F, or U
+    - id: accepted.patients.status
+      table: patients
+      key: patient_id
+      column: status
+      values: [active, inactive, deceased]
+      description: Patient status is active, inactive, or deceased
+    - id: accepted.visits.status
+      table: visits
+      key: visit_id
+      column: status
+      values: [scheduled, completed, cancelled, no_show]
+      description: Visit status is scheduled, completed, cancelled, or no_show
+    - id: accepted.invoices.status
+      table: invoices
+      key: invoice_id
+      column: status
+      values: [draft, issued, paid, void]
+      description: Invoice status is draft, issued, paid, or void
+    - id: accepted.invoices.currency
+      table: invoices
+      key: invoice_id
+      column: currency
+      values: [USD]
+      description: Currency is USD
+    - id: accepted.lab_results.test_code
+      table: lab_results
+      key: result_id
+      column: test_code
+      values: [CBC, CHEM, UA, FECAL, T4, HW]
+      description: Test code is CBC, CHEM, UA, FECAL, T4, or HW
+    - id: accepted.lab_results.abnormal_flag
+      table: lab_results
+      key: result_id
+      column: abnormal_flag
+      values: [N, H, L]
+      description: Abnormal flag is N, H, or L when it is present
+
+  ranges:
+    - id: range.invoices.amount_non_negative
+      table: invoices
+      key: invoice_id
+      column: amount
+      min: 0
+      description: Invoice amount is zero or positive
+    - id: range.invoices.tax_amount_non_negative
+      table: invoices
+      key: invoice_id
+      column: tax_amount
+      min: 0
+      description: Tax amount is zero or positive
+    - id: range.lab_results.result_value_non_negative
+      table: lab_results
+      key: result_id
+      column: result_value
+      min: 0
+      description: Lab result value is zero or positive
+
+  domain:
+    - id: range.visits.weight_kg_by_species
+      table: visits
+      file: sql/domain/range.visits.weight_kg_by_species.sql
+      description: Recorded weight falls inside the range for that species
+    - id: range.visits.temperature_c
+      table: visits
+      file: sql/domain/range.visits.temperature_c.sql
+      description: Recorded temperature falls inside 35.0 to 43.0 C
+    - id: date.patients.dob_not_after_as_of
+      table: patients
+      file: sql/domain/date.patients.dob_not_after_as_of.sql
+      description: Date of birth is on or before the extract date
+    - id: date.patients.dob_not_before_min
+      table: patients
+      file: sql/domain/date.patients.dob_not_before_min.sql
+      description: Date of birth is on or after 1990-01-01
+    - id: date.visits.not_after_as_of
+      table: visits
+      file: sql/domain/date.visits.not_after_as_of.sql
+      description: Visit date is on or before the extract date
+    - id: date.visits.on_or_after_birth
+      table: visits
+      file: sql/domain/date.visits.on_or_after_birth.sql
+      description: Visit date is on or after the patient's date of birth
+    - id: date.lab_results.collected_on_or_after_visit
+      table: lab_results
+      file: sql/domain/date.lab_results.collected_on_or_after_visit.sql
+      description: Lab collection date is on or after the visit date
+    - id: date.lab_results.collected_not_after_as_of
+      table: lab_results
+      file: sql/domain/date.lab_results.collected_not_after_as_of.sql
+      description: Lab collection date is on or before the extract date
+    - id: date.invoices.issued_on_or_after_visit
+      table: invoices
+      file: sql/domain/date.invoices.issued_on_or_after_visit.sql
+      description: Invoice issue date is on or after the visit date
+    - id: date.invoices.issued_not_after_as_of
+      table: invoices
+      file: sql/domain/date.invoices.issued_not_after_as_of.sql
+      description: Invoice issue date is on or before the extract date
+    - id: date.invoices.paid_on_or_after_issued
+      table: invoices
+      file: sql/domain/date.invoices.paid_on_or_after_issued.sql
+      description: Payment date is on or after the issue date
+    - id: consistency.invoices.paid_at_matches_status
+      table: invoices
+      file: sql/domain/consistency.invoices.paid_at_matches_status.sql
+      description: Paid invoices have a payment date, and other statuses do not
+    - id: consistency.invoices.tax_not_above_amount
+      table: invoices
+      file: sql/domain/consistency.invoices.tax_not_above_amount.sql
+      description: Tax does not exceed the invoice amount
+    - id: consistency.lab_results.patient_matches_visit
+      table: lab_results
+      file: sql/domain/consistency.lab_results.patient_matches_visit.sql
+      description: Lab patient matches the patient on the visit
+    - id: consistency.invoices.patient_matches_visit
+      table: invoices
+      file: sql/domain/consistency.invoices.patient_matches_visit.sql
+      description: Invoice patient matches the patient on the visit
+    - id: consistency.visits.completed_have_invoice
+      table: visits
+      file: sql/domain/consistency.visits.completed_have_invoice.sql
+      description: Every completed visit has an invoice
+    - id: consistency.visits.completed_have_weight
+      table: visits
+      file: sql/domain/consistency.visits.completed_have_weight.sql
+      description: Every completed visit records a weight
+    - id: consistency.invoices.only_for_completed_visits
+      table: invoices
+      file: sql/domain/consistency.invoices.only_for_completed_visits.sql
+      description: Invoices belong to completed visits
+    - id: consistency.visits.mammal_temperature_recorded
+      table: visits
+      severity: warning
+      file: sql/domain/consistency.visits.mammal_temperature_recorded.sql
+      description: Completed visits for dogs, cats, and rabbits record a temperature

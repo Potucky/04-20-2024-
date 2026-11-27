@@ -1,0 +1,13 @@
+# Runtime
+duckdb==2.0.1
+PyYAML==6.0.4
+
+# Tests, HTML report, and lint
+pytest==8.4.2
+pytest-html==4.2.0
+pytest-metadata==3.1.1
+Jinja2==3.1.6
+iniconfig==2.3.1
+pluggy==1.7.0
+pygments==2.21.0
+ruff==0.14.14

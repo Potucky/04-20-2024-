@@ -1,0 +1,158 @@
+# Defects applied on top of data/clean for dataset=defects.
+# Each mutation is independent. Applied alone, it fails exactly
+# expect_failed_checks, and those failing rows include expect_in_sample.
+
+mutations:
+  - id: duplicate_patient_id
+    description: Inserts a second patients row for PAT-001 (Milo).
+    expect_failed_checks:
+      - uniqueness.patients.patient_id
+    expect_in_sample:
+      - PAT-001
+    sql: |
+      INSERT INTO patients
+      SELECT * FROM patients WHERE patient_id = 'PAT-001'
+
+  - id: null_patient_species
+    description: Clears species on PAT-012 (Misty).
+    expect_failed_checks:
+      - not_null.patients.required_columns
+    expect_in_sample:
+      - PAT-012
+      - species
+    sql: |
+      UPDATE patients SET species = NULL WHERE patient_id = 'PAT-012'
+
+  - id: unknown_species
+    description: Sets PAT-004 (Kiwi) species outside the accepted list.
+    expect_failed_checks:
+      - accepted.patients.species
+    expect_in_sample:
+      - PAT-004
+      - dragon
+    sql: |
+      UPDATE patients SET species = 'dragon' WHERE patient_id = 'PAT-004'
+
+  - id: orphan_visit
+    description: Inserts VIS-902 for a patient id that is not in patients.
+    expect_failed_checks:
+      - fk.visits.patient_id
+    expect_in_sample:
+      - VIS-902
+      - PAT-404
+    sql: |
+      INSERT INTO visits (
+          visit_id, patient_id, visit_date, reason, veterinarian, status, weight_kg, temperature_c
+      ) VALUES (
+          'VIS-902', 'PAT-404', DATE '2024-03-01', 'Unknown patient', 'Dr. Chen', 'scheduled', NULL, NULL
+      )
+
+  - id: negative_invoice_amount
+    description: Sets INV-003 amount below zero. Tax stays positive, so the tax rule fails too.
+    expect_failed_checks:
+      - range.invoices.amount_non_negative
+      - consistency.invoices.tax_not_above_amount
+    expect_in_sample:
+      - INV-003
+    sql: |
+      UPDATE invoices SET amount = -40.00 WHERE invoice_id = 'INV-003'
+
+  - id: paid_before_issued
+    description: Moves INV-001 paid_at to a date before issued_at.
+    expect_failed_checks:
+      - date.invoices.paid_on_or_after_issued
+    expect_in_sample:
+      - INV-001
+    sql: |
+      UPDATE invoices SET paid_at = DATE '2024-01-01' WHERE invoice_id = 'INV-001'
+
+  - id: paid_status_missing_paid_at
+    description: Clears paid_at on INV-002 while status stays paid.
+    expect_failed_checks:
+      - consistency.invoices.paid_at_matches_status
+    expect_in_sample:
+      - INV-002
+    sql: |
+      UPDATE invoices SET paid_at = NULL WHERE invoice_id = 'INV-002'
+
+  - id: lab_patient_mismatch
+    description: Points LAB-001 at PAT-002 while the visit belongs to PAT-001.
+    expect_failed_checks:
+      - consistency.lab_results.patient_matches_visit
+    expect_in_sample:
+      - LAB-001
+    sql: |
+      UPDATE lab_results SET patient_id = 'PAT-002' WHERE result_id = 'LAB-001'
+
+  - id: future_visit
+    description: Inserts scheduled VIS-901 after the extract as-of date.
+    expect_failed_checks:
+      - date.visits.not_after_as_of
+    expect_in_sample:
+      - VIS-901
+    sql: |
+      INSERT INTO visits (
+          visit_id, patient_id, visit_date, reason, veterinarian, status, weight_kg, temperature_c
+      ) VALUES (
+          'VIS-901', 'PAT-001', DATE '2025-01-01', 'Future wellness', 'Dr. Chen', 'scheduled', NULL, NULL
+      )
+
+  - id: duplicate_invoice_visit
+    description: Inserts a second invoice for the same visit as INV-005.
+    expect_failed_checks:
+      - uniqueness.invoices.visit_id
+    expect_in_sample:
+      - VIS-005
+    sql: |
+      INSERT INTO invoices (
+          invoice_id, visit_id, patient_id, amount, tax_amount, currency, status, issued_at, paid_at
+      )
+      SELECT
+          'INV-901',
+          visit_id,
+          patient_id,
+          amount,
+          tax_amount,
+          currency,
+          status,
+          issued_at,
+          paid_at
+      FROM invoices
+      WHERE invoice_id = 'INV-005'
+
+  - id: weight_above_species_max
+    description: Sets VIS-001 weight_kg to 500, above the dog range.
+    expect_failed_checks:
+      - range.visits.weight_kg_by_species
+    expect_in_sample:
+      - VIS-001
+    sql: |
+      UPDATE visits SET weight_kg = 500 WHERE visit_id = 'VIS-001'
+
+  - id: temperature_above_max
+    description: Sets VIS-003 temperature_c to 50, above the clinical range.
+    expect_failed_checks:
+      - range.visits.temperature_c
+    expect_in_sample:
+      - VIS-003
+    sql: |
+      UPDATE visits SET temperature_c = 50 WHERE visit_id = 'VIS-003'
+
+  - id: visit_before_birth
+    description: Moves cancelled VIS-014 to a date before that patient was born.
+    expect_failed_checks:
+      - date.visits.on_or_after_birth
+    expect_in_sample:
+      - VIS-014
+    sql: |
+      UPDATE visits SET visit_date = DATE '2000-01-01' WHERE visit_id = 'VIS-014'
+
+  - id: unknown_visit_status
+    description: Sets VIS-035 status outside the visit status list.
+    expect_failed_checks:
+      - accepted.visits.status
+    expect_in_sample:
+      - VIS-035
+      - pending
+    sql: |
+      UPDATE visits SET status = 'pending' WHERE visit_id = 'VIS-035'
