@@ -1,0 +1,25 @@
+patient_id,name,species,breed,date_of_birth,sex,status,owner_name,created_at
+PAT-001,Milo,dog,Labrador Retriever,2018-03-14,M,active,Sam Okonkwo,2023-01-10
+PAT-002,Luna,cat,Domestic Shorthair,2020-07-02,F,active,Priya Shah,2023-01-12
+PAT-003,Coco,dog,Mixed Breed,2015-11-30,F,active,Elena Vasquez,2023-01-15
+PAT-004,Kiwi,bird,Cockatiel,2021-04-19,U,active,Noah Kim,2023-02-01
+PAT-005,Thumper,rabbit,Holland Lop,2022-01-08,M,active,Grace Liu,2023-02-03
+PAT-006,Ziggy,reptile,Bearded Dragon,2019-09-21,M,active,Omar Farouk,2023-02-11
+PAT-007,Bella,dog,Beagle,2016-05-27,F,active,Hannah Berg,2023-02-18
+PAT-008,Oliver,cat,Maine Coon,2017-12-05,M,active,Chris Dalton,2023-03-01
+PAT-009,Daisy,dog,Golden Retriever,2019-06-16,F,active,Maya Chen,2023-03-04
+PAT-010,Nibbles,rabbit,Mini Rex,2021-08-23,F,active,Leo Martins,2023-03-09
+PAT-011,Rocky,dog,German Shepherd,2014-02-11,M,active,Anita Desai,2023-03-14
+PAT-012,Misty,cat,Siamese,2018-10-01,F,inactive,Paul Nguyen,2023-03-20
+PAT-013,Pepper,dog,French Bulldog,2020-02-29,M,active,Sofia Rossi,2023-04-02
+PAT-014,Hazel,bird,Budgerigar,2022-05-12,F,active,Ivan Petrov,2023-04-08
+PAT-015,Sheldon,reptile,Leopard Gecko,2020-11-03,M,active,Dana Brooks,2023-04-15
+PAT-016,Willow,cat,Domestic Longhair,2013-07-19,F,deceased,Ruth Adler,2023-04-22
+PAT-017,Bear,dog,Bernese Mountain Dog,2018-01-25,M,active,Tom Becker,2023-05-01
+PAT-018,Maple,dog,Corgi,2021-09-14,F,active,Yuki Tanaka,2023-05-06
+PAT-019,Simon,cat,Russian Blue,2019-03-30,M,active,Fiona Walsh,2023-05-12
+PAT-020,Hopper,rabbit,Lionhead,2022-12-01,M,active,Ben Carter,2023-05-20
+PAT-021,Pip,bird,Green Cheek Conure,2021-01-17,U,active,Clara Sousa,2023-06-02
+PAT-022,Ace,dog,Border Collie,2017-08-08,M,active,Malik Jordan,2023-06-09
+PAT-023,Nala,cat,Bengal,2020-06-25,F,active,Helen Park,2023-06-18
+PAT-024,Moose,dog,Great Dane,2016-12-12,M,active,Victor Alvarez,2023-07-01
